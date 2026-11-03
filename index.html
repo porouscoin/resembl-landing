@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>resembl · find papers that read like yours</title>
+<meta name="description" content="resembl finds semantically similar research papers, summarizes them section by section, and answers questions with citations. Final year project, FAST-NUCES. Runs locally from GitHub.">
+<meta property="og:title" content="resembl">
+<meta property="og:description" content="Find the papers that read like yours. A research paper similarity tool you run locally from GitHub.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2316181b'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' text-anchor='middle' fill='%23d9a441'%3Er%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #131416;
+    --bg-2: #1a1c1f;
+    --line: #2a2d31;
+    --text: #ecebe7;
+    --muted: #a3a29c;
+    --accent: #d9a441;
+    --accent-ink: #1a1405;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+    --sans: "IBM Plex Sans", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 19px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  /* top notice */
+  .notice { background: var(--accent); color: var(--accent-ink); font-size: 16px; font-weight: 500; text-align: center; padding: 10px 16px; }
+  .notice a { font-weight: 700; }
+
+  /* nav */
+  nav { border-bottom: 1px solid var(--line); }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .brand { font-family: var(--mono); font-weight: 500; font-size: 22px; text-decoration: none; letter-spacing: -0.5px; }
+  .brand span { color: var(--accent); }
+  .nav-links { display: flex; gap: 28px; align-items: center; font-size: 16px; }
+  .nav-links a { text-decoration: none; color: var(--muted); }
+  .nav-links a:hover { color: var(--text); }
+  .nav-links a.gh { color: var(--text); border: 1px solid var(--line); padding: 7px 14px; border-radius: 6px; }
+
+  /* hero */
+  .hero { padding: 96px 0 80px; border-bottom: 1px solid var(--line); }
+  .eyebrow { font-family: var(--mono); font-size: 15px; color: var(--muted); margin: 0 0 20px; }
+  h1 { font-size: clamp(42px, 7vw, 76px); line-height: 1.05; letter-spacing: -2px; margin: 0 0 28px; font-weight: 700; max-width: 14ch; }
+  .lede { font-size: clamp(19px, 2.2vw, 23px); color: var(--muted); max-width: 40ch; margin: 0 0 40px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 14px; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; padding: 15px 24px; border-radius: 8px; font-size: 17px; font-weight: 600; text-decoration: none; border: 1px solid var(--line); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.ghost:hover { border-color: var(--muted); }
+  .hero-note { margin-top: 22px; font-size: 16px; color: var(--muted); }
+
+  section { padding: 88px 0; border-bottom: 1px solid var(--line); }
+  h2 { font-size: clamp(30px, 4vw, 42px); letter-spacing: -1px; line-height: 1.15; margin: 0 0 16px; }
+  .section-lede { color: var(--muted); font-size: 20px; margin: 0 0 48px; max-width: 46ch; }
+
+  /* features list */
+  .features { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .features li { display: grid; grid-template-columns: 64px 1fr; gap: 8px 24px; padding: 30px 0; border-bottom: 1px solid var(--line); }
+  .features .num { font-family: var(--mono); color: var(--accent); font-size: 17px; padding-top: 4px; }
+  .features h3 { margin: 0 0 6px; font-size: 24px; }
+  .features p { margin: 0; color: var(--muted); max-width: 60ch; }
+
+  /* pipeline */
+  .pipeline { display: flex; align-items: stretch; gap: 0; overflow-x: auto; padding-bottom: 8px; }
+  .step { flex: 1 1 0; min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 18px 18px; background: var(--bg-2); }
+  .step b { display: block; font-size: 18px; margin-bottom: 6px; }
+  .step span { font-family: var(--mono); font-size: 14px; color: var(--muted); line-height: 1.5; display: block; }
+  .arrow { flex: 0 0 28px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 22px; }
+  .pipeline-note { margin-top: 28px; color: var(--muted); font-size: 17px; }
+
+  /* run locally */
+  .run { background: var(--bg-2); }
+  .run-grid { display: grid; grid-template-columns: 1fr 1.25fr; gap: 56px; align-items: start; }
+  .run-grid > div { min-width: 0; }
+  .needs { list-style: none; padding: 0; margin: 0 0 32px; }
+  .needs li { padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 18px; }
+  .needs li:first-child { border-top: 1px solid var(--line); }
+  .needs code { font-family: var(--mono); font-size: 16px; color: var(--accent); }
+  pre { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 22px 24px; overflow-x: auto; font-family: var(--mono); font-size: 15px; line-height: 1.75; color: var(--text); }
+  pre .c { color: var(--muted); }
+  .run-foot { margin-top: 20px; color: var(--muted); font-size: 17px; }
+
+  footer { padding: 48px 0 64px; color: var(--muted); font-size: 16px; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; }
+  footer a { color: var(--text); }
+
+  @media (max-width: 820px) {
+    body { font-size: 18px; }
+    .wrap { padding: 0 16px; }
+    .nav-links a:not(.gh) { display: none; }
+    .hero { padding: 64px 0 56px; }
+    section { padding: 64px 0; }
+    .features li { grid-template-columns: 1fr; }
+    .run-grid { grid-template-columns: 1fr; gap: 32px; }
+    .pipeline { flex-direction: column; overflow: visible; }
+    .step { flex: none; }
+    .arrow { flex: 0 0 32px; transform: rotate(90deg); }
+    .btn { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="notice">resembl isn't hosted online. It runs on your own machine. <a href="https://github.com/porouscoin/fyp">Get it from GitHub →</a></div>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#">resembl<span>.</span></a>
+    <div class="nav-links">
+      <a href="#features">What it does</a>
+      <a href="#how">How it works</a>
+      <a href="#run">Run it locally</a>
+      <a class="gh" href="https://github.com/porouscoin/fyp">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Final year project · FAST-NUCES · 2026</p>
+    <h1>Find the papers that read like yours.</h1>
+    <p class="lede">Paste an arXiv link, upload a PDF, or search a topic. resembl finds semantically similar research, summarizes papers section by section, and answers questions with citations to the source.</p>
+    <div class="actions">
+      <a class="btn primary" href="https://github.com/porouscoin/fyp">Run it from GitHub →</a>
+      <a class="btn ghost" href="#run">See setup steps</a>
+    </div>
+    <p class="hero-note">There's no live demo. Clone the repo and run the backend and frontend locally.</p>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <h2>What it does</h2>
+    <p class="section-lede">Everything you need to go from one paper to the research around it.</p>
+    <ol class="features">
+      <li><span class="num">01</span><div><h3>Similar papers</h3><p>Start from keywords, an arXiv ID or your own PDF, and get the closest papers ranked by meaning, not keyword overlap.</p></div></li>
+      <li><span class="num">02</span><div><h3>Section summaries</h3><p>Each section of a paper summarized on its own, streamed as it's written.</p></div></li>
+      <li><span class="num">03</span><div><h3>Q&amp;A with citations</h3><p>Ask a question about one paper or several, and the answer points back to the passages it came from, highlighted in the PDF.</p></div></li>
+      <li><span class="num">04</span><div><h3>Clusters and network graph</h3><p>See how papers group by topic, with word clouds and a force-directed similarity graph.</p></div></li>
+      <li><span class="num">05</span><div><h3>Trends and venues</h3><p>Publication trends over time, topic momentum, and which venues publish what.</p></div></li>
+    </ol>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <h2>How it works</h2>
+    <p class="section-lede">A FastAPI backend does the analysis. A Next.js frontend shows the results.</p>
+    <div class="pipeline">
+      <div class="step"><b>Input</b><span>arXiv ID, PDF upload or keywords</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><b>Extract</b><span>PyMuPDF text, spaCy + NLTK cleanup</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><b>Embed</b><span>all-MiniLM-L6-v2 sentence embeddings</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><b>Group</b><span>KMeans clusters, LDA topics</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><b>Store</b><span>Postgres + pgvector</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><b>Answer</b><span>Llama 3 on Groq, RAG over BGE chunks</span></div>
+    </div>
+    <p class="pipeline-note">Summary quality was checked with ROUGE and BERTScore against the papers' own sections.</p>
+  </div>
+</section>
+
+<section id="run" class="run">
+  <div class="wrap">
+    <h2>Run it locally</h2>
+    <p class="section-lede">resembl needs a database, a few local models and an LLM key, so it isn't hosted. Setting it up on your machine takes about 15 minutes.</p>
+    <div class="run-grid">
+      <div>
+        <ul class="needs">
+          <li>Python 3.10+ and Node.js 18+</li>
+          <li>PostgreSQL with the <code>pgvector</code> extension</li>
+          <li>A free Groq API key in <code>backend/.env</code></li>
+          <li>Paper data from <code>prepare_data.py</code> (run once)</li>
+        </ul>
+        <a class="btn primary" href="https://github.com/porouscoin/fyp#readme">Full setup guide on GitHub →</a>
+      </div>
+      <div>
+<pre><span class="c"># 1. get the code</span>
+git clone https://github.com/porouscoin/fyp
+cd fyp
+
+<span class="c"># 2. backend (http://localhost:8000)</span>
+cd backend
+pip install -r requirements.txt
+python -m spacy download en_core_web_sm
+python prepare_data.py
+python main.py
+
+<span class="c"># 3. frontend (http://localhost:3000)</span>
+cd ../frontend
+npm install
+npm run dev</pre>
+        <p class="run-foot">Then open localhost:3000 in your browser.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Built by Ziyad Hisham, Fatima Hameed and Hania Fayyaz · FAST-NUCES</span>
+    <span><a href="https://ziyadhisham.com">ziyadhisham.com</a> · <a href="https://github.com/porouscoin/fyp">GitHub</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

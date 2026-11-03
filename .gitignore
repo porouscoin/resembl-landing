@@ -1,8 +1,0 @@
-.next
-node_modules
-*.pyc
-__pycache__
-.env
-temp_uploads/
-pdfs/
-*.pkl
